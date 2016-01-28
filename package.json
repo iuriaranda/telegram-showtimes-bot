@@ -1,0 +1,36 @@
+{
+  "name": "telegram-showtimes-bot",
+  "version": "0.1.0",
+  "description": "A telegram bot that shows information about movie showtimes",
+  "main": "index.js",
+  "scripts": {
+    "start": "startbot --handler index.handler --bot_token $TELEGRAM_BOT_TOKEN"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "showtimes",
+    "movie",
+    "movies",
+    "theater",
+    "theaters"
+  ],
+  "author": "iuri aranda <iuri.aranda@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "lambda-remote-config": "iuriaranda/lambda-remote-config",
+    "lambda-telegram-bots": "file:../lambda-telegram-bots",
+    "node-telegram-bot-api": "^0.19.2",
+    "showtimes": "iuriaranda/showtimes#no_es6"
+  },
+  "bundledDependencies": [
+    "lambda-remote-config",
+    "lambda-telegram-bots",
+    "node-telegram-bot-api",
+    "showtimes"
+  ],
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-aws-lambda": "^0.11.0"
+  }
+}
