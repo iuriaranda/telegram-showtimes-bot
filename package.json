@@ -18,14 +18,16 @@
   "author": "iuri aranda <iuri.aranda@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "bluebird": "^3.1.5",
     "lambda-remote-config": "iuriaranda/lambda-remote-config",
-    "lambda-telegram-bots": "file:../lambda-telegram-bots",
+    "lambda-telegram-bot-handler": "iuriaranda/lambda-telegram-bot-handler",
     "node-telegram-bot-api": "^0.19.2",
-    "showtimes": "iuriaranda/showtimes#no_es6"
+    "showtimes": "iuriaranda/showtimes#no_es6",
+    "underscore": "^1.8.3"
   },
   "bundledDependencies": [
     "lambda-remote-config",
-    "lambda-telegram-bots",
+    "lambda-telegram-bot-handler",
     "node-telegram-bot-api",
     "showtimes"
   ],

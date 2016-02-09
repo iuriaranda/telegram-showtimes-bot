@@ -5,28 +5,14 @@ telegram-showtimes-bot
 
 ### /setlocation
 
-### /movies
+### /movies or /showtimes [query]
 
-Shows the movies that are projecting in near theaters
+Shows showtimes in near theaters
 
-### /movies [theater]
-
-Shows the movies that are projecting in the specified theater
-
-### /theaters
+### /theaters [query]
 
 Shows nearby theaters
 
-### /theaters [movie]
-
-Shows the theaters that are projecting the specified movie
-
-### /showtimes [movie]
-
-Show showtimes for the specified movie in nearby theaters
-
-### /showtimes [movie] in [theater]
-
-Shows showtimes for the specified movie in the specified theater
+# todo send a second command to show showtimes for other day
 
 # License
