@@ -1,3 +1,9 @@
+// Log uncaught exceptions
+process.on('uncaughtException', function (error) {
+  console.error('Uncaught Exception', error);
+  process.exit(1);
+});
+
 var telegramHandler = require('lambda-telegram-bot-handler');
 var TelegramBot = require('node-telegram-bot-api');
 var util = require('util');
