@@ -14,7 +14,7 @@ var Showtimes = require('showtimes');
 Promise.promisifyAll(Showtimes.prototype);
 
 var api = new Showtimes('Barcelona, Spain');
-var CONFIG = lambdaConfig.fetch({ S3Bucket: 'showtimesbot-config', S3File: 'config.json' });
+var CONFIG = lambdaConfig.fetch({ S3Bucket: 'showtimes-bot-config', S3File: 'config.json' });
 
 var bot;
 lambdaConfig.on('ready', function () {
