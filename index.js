@@ -119,7 +119,7 @@ var formatThings = function (msg, things, type) {
     }
   });
   return _.compact(_.map(response, function (line, l) {
-    if (l%mod === 9) {
+    if (l%mod === mod - 1) {
       return response.slice(l - l%mod, l + 1).join('\n');
     } else if (l === response.length - 1) {
       return response.slice(l - l%mod).join('\n');
