@@ -29,7 +29,9 @@
     "lambda-remote-config",
     "lambda-telegram-bot-handler",
     "node-telegram-bot-api",
-    "showtimes"
+    "showtimes",
+    "bluebird",
+    "underscore"
   ],
   "devDependencies": {
     "grunt": "^0.4.5",
