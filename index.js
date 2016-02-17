@@ -11,10 +11,12 @@ var lambdaConfig = require('lambda-remote-config');
 var _ = require('underscore');
 var Promise = require('bluebird');
 var Showtimes = require('showtimes');
+var AWS = require('aws-sdk');
 Promise.promisifyAll(Showtimes.prototype);
 
 var api = new Showtimes('Barcelona, Spain');
 var CONFIG = lambdaConfig.fetch({ S3Bucket: 'showtimes-bot-config', S3File: 'config.json' });
+var db = new AWS.DynamoDB({ region: 'eu-west-1' });
 
 var bot;
 lambdaConfig.on('ready', function () {
@@ -22,7 +24,7 @@ lambdaConfig.on('ready', function () {
 });
 
 var help_text = 'I can help you find nearby theaters and showtimes. Tell me, what are you looking for?\n\n';
-// help_text += '/setlocation - Sets your location for future reference\n';
+help_text += '/setlocation - Sets your location for future reference\n';
 help_text += '/movies or /showtimes - Shows the movies that are projecting in near theaters\n';
 help_text += '/theaters - Shows nearby theaters, and the movies they are screening\n';
 
@@ -41,13 +43,47 @@ var onMessage = function (msg, cb) {
   }).catch(cb);
 };
 
-var onSetLocation = function (msg, matches, cb) {
-  bot.sendMessage(msg.chat.id, 'TODO setlocation').then(function () {
+var onSetLocation = function (msg, cb, matches) {
+  setLocation(msg.chat.id, matches[1], function (err) {
+    var response;
+    if (err) {
+      console.log(err);
+      response = bot.sendMessage(msg.chat.id, 'An error happened setting your new location, please try again in a few moments');
+    } else {
+      response = bot.sendMessage(msg.chat.id, util.format('I\'ve set your location to %s', matches[1]));
+    }
+
+    response.then(function () {
+      cb();
+    }).catch(cb);
+  });
+};
+
+var onSetDeferedLocation = function (msg, cb) {
+  bot.sendMessage(msg.chat.id, 'Send me your location using the location button on Telegram, or send it manually with "/setlocation city, country or zip code"').then(function () {
     cb();
   }).catch(cb);
 };
 
-var onTheaters = function (msg, matches, cb) {
+var onLocation = function (msg, cb) {
+  if (msg.chat.type !== 'private') return cb(); // Ignore all but private messages, TODO: be able to set location in a group
+
+  setLocation(msg.chat.id, util.format('%s,%s', msg.location.latitude, msg.location.longitude), function (err) {
+    var response;
+    if (err) {
+      console.log(err);
+      response = bot.sendMessage(msg.chat.id, 'An error happened setting your new location, please try again in a few moments');
+    } else {
+      response = bot.sendMessage(msg.chat.id, 'I\'ve set your location');
+    }
+
+    response.then(function () {
+      cb();
+    }).catch(cb);
+  });
+};
+
+var onTheaters = function (msg, cb, matches) {
   bot.sendChatAction(msg.chat.id, 'typing');
 
   api.getTheatersAsync(matches[1]).then(function (theaters) {
@@ -68,7 +104,7 @@ var onTheaters = function (msg, matches, cb) {
   });
 };
 
-var onShowtimes = function (msg, matches, cb) {
+var onShowtimes = function (msg, cb, matches) {
   bot.sendChatAction(msg.chat.id, 'typing');
 
   api.getMoviesAsync(matches[1]).then(function (movies) {
@@ -87,6 +123,26 @@ var onShowtimes = function (msg, matches, cb) {
   }).catch(function (err) {
     onError(err, msg, 'Error fetching theaters', cb);
   });
+};
+
+var setLocation = function (id, location, cb) {
+  db.updateItem({
+    Key: {
+      userid: {
+        N: id + ''
+      }
+    },
+    TableName: 'showtimesbot-users',
+    UpdateExpression: 'SET #loc=:loc',
+    ExpressionAttributeValues: {
+      ':loc': {
+        S: location
+      }
+    },
+    ExpressionAttributeNames: {
+      '#loc': 'location'
+    }
+  }, cb);
 };
 
 var onError = function (err, msg, err_msg, cb) {
@@ -139,16 +195,21 @@ exports.handler = lambdaConfig.handler(telegramHandler({
   onMessage: onMessage,
   onText: [
     {
-      matches: /^\/setlocation/,
-      handler: onMessage
+      matches: /^\/setlocation\s+(.+)\s*$/,
+      handler: onSetLocation
     },
     {
-      matches: /^\/theaters(?:\s+(.+))?$/,
+      matches: /^\/setlocation\s*$/,
+      handler: onSetDeferedLocation
+    },
+    {
+      matches: /^\/theaters(?:\s+(.+)\s*)?$/,
       handler: onTheaters
     },
     {
-      matches: /^\/(?:showtimes|movies)(?:\s+(.+))?$/,
+      matches: /^\/(?:showtimes|movies)(?:\s+(.+)\s*)?$/,
       handler: onShowtimes
     }
-  ]
+  ],
+  onLocation: onLocation
 }));

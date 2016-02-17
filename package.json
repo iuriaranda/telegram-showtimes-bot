@@ -18,6 +18,7 @@
   "author": "iuri aranda <iuri.aranda@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "aws-sdk": "^2.2.35",
     "bluebird": "^3.1.5",
     "lambda-remote-config": "iuriaranda/lambda-remote-config",
     "lambda-telegram-bot-handler": "iuriaranda/lambda-telegram-bot-handler",
