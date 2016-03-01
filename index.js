@@ -122,6 +122,34 @@ var onShowtimes = function (msg, cb, matches) {
   });
 };
 
+var onMovie = function (msg, cb, matches) {
+  bot.sendChatAction(msg.chat.id, 'typing');
+
+  var no_location = false;
+  getLocationForUser(msg.chat.id).then(function (location) {
+    if (!location) {
+      location = default_location;
+      no_location = true;
+    }
+
+    var api = new Showtimes(location);
+    return api.getMovieAsync(matches[1]);
+  }).then(function (movie) {
+    var response = formatMovies(msg, movie, matches[1]);
+    if (no_location) response.push(no_location_text);
+    return Promise.mapSeries(response, function (text) {
+      return bot.sendMessage(msg.chat.id, text, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      });
+    });
+  }).then(function () {
+    cb();
+  }).catch(function (err) {
+    onError(err, msg, error_showtimes_text, matches[1], 'showtimes', cb);
+  });
+};
+
 var setLocation = function (id, location, cb) {
   db.updateItem({
     Key: {
@@ -246,6 +274,10 @@ exports.handler = lambdaConfig.handler(telegramHandler({
     {
       matches: /^\/(?:showtimes|movies)(?:\s+(.+)\s*)?$/,
       handler: onShowtimes
+    },
+    {
+      matches: /^\/movie_(.+)$/,
+      handler: onMovie
     }
   ],
   onLocation: onLocation
