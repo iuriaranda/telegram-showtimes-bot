@@ -210,7 +210,7 @@ var formatThings = function (msg, things, type, query) {
   var mod = type === 'movies' ? 10 : 5;
   var noThings = true;
 
-  things.data.forEach(function (thing) {
+  var thingParser = function (thing) {
     var partialResponse = util.format('*%s*\n', thing.name);
     var noOtherThings = true;
     if (thing[otherType]) {
@@ -229,11 +229,21 @@ var formatThings = function (msg, things, type, query) {
       });
     }
 
+    if (type === 'movies' && thing.more_theaters) {
+      partialResponse += util.format('_Show more theaters_ -> /movie\\_%s\n', thing.id);
+    }
+
     if (!noOtherThings) {
       response.push(partialResponse);
       noThings = false;
     }
-  });
+  };
+
+  if (util.isArray(things.data)) {
+    things.data.forEach(thingParser);
+  } else {
+    thingParser(things.data);
+  }
 
   if (noThings) {
     return [ util.format(empty_text, type, query) ];
