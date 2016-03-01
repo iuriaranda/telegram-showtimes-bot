@@ -24,9 +24,9 @@ lambdaConfig.on('ready', function () {
 });
 
 var help_text = 'I can show you nearby theaters and showtimes. Tell me, what can I do for you?\n\n';
-help_text += '-> /movies or /showtimes \\[query\] - Shows movie showtimes and nearby theaters screening them. You can filter the movies and dates with `query`, for example `/movies tomorrow` will show showtimes for tomorrow, and `/movies star wars` will only show showtimes for movies containing star wars in their title.\n\n';
-help_text += '-> /theaters \\[query\] - Shows nearby theaters and the movies they are screening. You can filter the theaters and dates with `query`, for example `/theaters tomorrow` will show theaters and their showtimes for tomorrow, and `/theaters Verdi` will only show nearby theaters called Verdi.\n\n';
-help_text += '-> /setlocation - Sets your location for future reference';
+help_text += '-> 🎬 /movies or /showtimes \\[query\] - Shows movie showtimes and nearby theaters screening them. You can filter the movies and dates with `query`, for example `/movies tomorrow` will show showtimes for tomorrow, and `/movies star wars` will only show showtimes for movies containing star wars in their title.\n\n';
+help_text += '-> 📽 /theaters \\[query\] - Shows nearby theaters and the movies they are screening. You can filter the theaters and dates with `query`, for example `/theaters tomorrow` will show theaters and their showtimes for tomorrow, and `/theaters Verdi` will only show nearby theaters called Verdi.\n\n';
+help_text += '-> 📍 /setlocation - Sets your location for future reference';
 
 var deferred_location_help_text = 'Send me your location using the location button on Telegram, or send it manually with "/setlocation city, country or zip code".';
 
@@ -211,7 +211,7 @@ var formatThings = function (msg, things, type, query) {
   var noThings = true;
 
   var thingParser = function (thing) {
-    var partialResponse = util.format('*%s*\n', thing.name);
+    var partialResponse = util.format('%s *%s*\n', (type === 'movies' ? '🎬' : '📽'), thing.name);
     var noOtherThings = true;
     if (thing[otherType]) {
       thing[otherType].forEach(function (otherThing) {
@@ -225,7 +225,7 @@ var formatThings = function (msg, things, type, query) {
         } else {
           showtimes = otherThing.showtimes;
         }
-        partialResponse += util.format('%s - %s\n', otherThing.name, showtimes.join(' '));
+        partialResponse += util.format('%s %s - %s\n', (type === 'theaters' ? '🎬' : '📽'), otherThing.name, showtimes.join(' '));
       });
     }
 
