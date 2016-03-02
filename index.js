@@ -15,7 +15,6 @@ var AWS = require('aws-sdk');
 require('datejs');
 Promise.promisifyAll(Showtimes.prototype);
 
-var api = new Showtimes('Barcelona, Spain');
 var CONFIG = lambdaConfig.fetch({ S3Bucket: 'showtimes-bot-config', S3File: 'config.json' });
 var db = new AWS.DynamoDB({ region: 'eu-west-1' });
 
