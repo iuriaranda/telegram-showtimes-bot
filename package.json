@@ -22,7 +22,7 @@
     "bluebird": "^3.1.5",
     "datejs": "0.0.2",
     "lambda-remote-config": "iuriaranda/lambda-remote-config",
-    "lambda-telegram-bot-handler": "iuriaranda/lambda-telegram-bot-handler",
+    "lambda-telegram-bot-handler": "0.1.0",
     "node-telegram-bot-api": "^0.19.2",
     "showtimes": "iuriaranda/showtimes#no_es6",
     "underscore": "^1.8.3"
