@@ -99,25 +99,38 @@ var onTheaters = function (msg, cb, matches) {
 var onShowtimes = function (msg, cb, matches) {
   bot.sendChatAction(msg.chat.id, 'typing');
 
-  var no_location = false;
-  getLocationForUser(msg.chat.id).then(function (location) {
-    if (!location) {
-      location = default_location;
-      no_location = true;
+  var location = false;
+  var retried = false;
+  var moviesHandler = function (movies) {
+    if (!movies.data.length && !retried) {
+      // If no movies found this way, it may be due to a time search like /movies tomorrow
+      // try seting the date directly to the search
+      retried = true;
+      var d = Date.parse(matches[1]);
+      if (d !== null) {
+        var api = new Showtimes(location || default_location, { date: dateDiff(d) });
+        return api.getMoviesAsync().then(moviesHandler);
+      }
     }
 
-    var api = new Showtimes(location);
-    return api.getMoviesAsync(matches[1]);
-  }).then(function (movies) {
     var response = formatMovies(msg, movies, matches[1]);
-    if (no_location) response.push(no_location_text);
+    if (!location) response.push(no_location_text);
     return Promise.mapSeries(response, function (text) {
       return bot.sendMessage(msg.chat.id, text, {
         parse_mode: 'Markdown',
         disable_web_page_preview: true
       });
     });
-  }).then(function () {
+  };
+
+  getLocationForUser(msg.chat.id).then(function (_location) {
+    if (_location) {
+      location = _location;
+    }
+
+    var api = new Showtimes(location || default_location);
+    return api.getMoviesAsync(matches[1]);
+  }).then(moviesHandler).then(function () {
     cb();
   }).catch(function (err) {
     onError(err, msg, error_showtimes_text, matches[1], 'showtimes', cb);
