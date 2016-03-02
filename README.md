@@ -1,6 +1,12 @@
 telegram-showtimes-bot
 ======================
 
+I'm a telegram bot to search movie showtimes and theaters near a predefined location. You can chat with me [here](https://telegram.me/showtimesbot).
+
+## What can I do?
+
+I can show you nearby theaters and showtimes. Just start by letting me know where you are with the /setlocation command, and then I will be able to send you movies (/movies) and theaters (/theaters) screening near you.
+
 ## Commands
 
 ### /setlocation [location]
