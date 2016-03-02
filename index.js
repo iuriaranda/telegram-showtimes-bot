@@ -32,6 +32,7 @@ help_text += '-> 📍 /setlocation - Sets your location for future reference';
 var deferred_location_help_text = 'Send me your location using the location button on Telegram, or send it manually with "/setlocation city, country or zip code".';
 
 var empty_text = 'Sorry, I couldn\'t find any %s matching %s.';
+var empty_text_expanded = 'Sorry, I couldn\'t find any %s matching %s for %s near %s.';
 var no_location_text = 'These are not the theaters you\'re looking for...\nTo set your preferred location, use the /setlocation command.';
 var error_showtimes_text = 'Error finding showtimes. Please try again in a few minutes.';
 var error_theaters_text = 'Error finding theaters. Please try again in a few minutes.';
@@ -247,7 +248,7 @@ var formatThings = function (msg, things, type, query) {
   }
 
   if (noThings) {
-    return [ util.format(empty_text, type, query) ];
+    return [ util.format(empty_text_expanded, type, query, things.date, things.location) ];
   } else {
     return _.compact(_.map(response, function (line, l) {
       if (l%mod === mod - 1) {
