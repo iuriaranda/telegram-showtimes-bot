@@ -27,8 +27,10 @@ var help_text = 'I can show you nearby theaters and showtimes. Tell me, what can
 help_text += '-> 🎬 /movies or /showtimes \\[query\] - Shows movie showtimes and nearby theaters screening them. You can filter the movies and dates with `query`, for example `/movies tomorrow` will show showtimes for tomorrow, and `/movies star wars` will only show showtimes for movies containing star wars in their title.\n\n';
 help_text += '-> 📽 /theaters \\[query\] - Shows nearby theaters and the movies they are screening. You can filter the theaters and dates with `query`, for example `/theaters tomorrow` will show theaters and their showtimes for tomorrow, and `/theaters Verdi` will only show nearby theaters called Verdi.\n\n';
 help_text += '-> 📍 /setlocation - Sets your location for future reference';
+var help_group_append_text = '\n\n*Note* that in groups you have to append @ShowtimesBot to all commands, e.g. "/setlocation@ShowtimesBot" or "/movies@ShowtimesBot"';
 
 var deferred_location_help_text = 'Send me your location using the location button on Telegram, or send it manually with "/setlocation city, country or zip code".';
+var deferred_location_group_help_text = 'Add your location to the /setlocation@ShowtimesBot command, like "/setlocation@ShowtimesBot city, country or zip code".';
 
 var empty_text = 'Sorry, I couldn\'t find any %s matching %s.';
 var empty_text_expanded = 'Sorry, I couldn\'t find any %s matching %s for %s near %s.';
@@ -37,14 +39,15 @@ var error_showtimes_text = 'Error finding showtimes. Please try again in a few m
 var error_theaters_text = 'Error finding theaters. Please try again in a few minutes.';
 var error_setting_location_text = 'An error happened setting your new location, please try again in a few minutes.';
 var location_set_text = 'I\'ve set your location to %s.';
+var location_set_group_append_text = ' Note that this location will only be used for this group.';
 
 var default_location = 'Barcelona, Spain';
 
 // Process unhandled messages
-var onMessage = function (msg, cb) {
-  if (msg.chat.type !== 'private') return cb(); // Ignore all but private messages
+var onHelp = function (msg, cb, matches) {
+  if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
 
-  bot.sendMessage(msg.from.id, help_text, {
+  bot.sendMessage(msg.chat.id, help_text + ((msg.chat.type !== 'private') ? help_group_append_text : ''), {
     parse_mode: 'Markdown',
     disable_web_page_preview: true
   }).then(function () {
@@ -53,21 +56,28 @@ var onMessage = function (msg, cb) {
 };
 
 var onSetLocation = function (msg, cb, matches) {
-  setLocation(msg.chat.id, matches[1], cb);
+  if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
+  setLocation(msg, matches[2], cb);
 };
 
-var onSetDeferedLocation = function (msg, cb) {
-  bot.sendMessage(msg.chat.id, deferred_location_help_text).then(function () {
+var onSetDeferedLocation = function (msg, cb, matches) {
+  if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
+  var response = deferred_location_help_text;
+  if (msg.chat.type !== 'private') {
+    response = deferred_location_group_help_text;
+  }
+  bot.sendMessage(msg.chat.id, response).then(function () {
     cb();
   }).catch(cb);
 };
 
 var onLocation = function (msg, cb) {
   if (msg.chat.type !== 'private') return cb(); // Ignore all but private messages, TODO: be able to set location in a group
-  setLocation(msg.chat.id, util.format('%s,%s', msg.location.latitude, msg.location.longitude), cb);
+  setLocation(msg, util.format('%s,%s', msg.location.latitude, msg.location.longitude), cb);
 };
 
 var onTheaters = function (msg, cb, matches) {
+  if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
   bot.sendChatAction(msg.chat.id, 'typing');
 
   var no_location = false;
@@ -78,9 +88,9 @@ var onTheaters = function (msg, cb, matches) {
     }
 
     var api = new Showtimes(location);
-    return api.getTheatersAsync(matches[1]);
+    return api.getTheatersAsync(matches[2]);
   }).then(function (theaters) {
-    var response = formatTheaters(msg, theaters, matches[1]);
+    var response = formatTheaters(msg, theaters, matches[2]);
     if (no_location) response.push(no_location_text);
     return Promise.mapSeries(response, function (text) {
       return bot.sendMessage(msg.chat.id, text, {
@@ -91,11 +101,12 @@ var onTheaters = function (msg, cb, matches) {
   }).then(function () {
     cb();
   }).catch(function (err) {
-    onError(err, msg, error_theaters_text, matches[1], 'theaters', cb);
+    onError(err, msg, error_theaters_text, matches[2], 'theaters', cb);
   });
 };
 
 var onShowtimes = function (msg, cb, matches) {
+  if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
   bot.sendChatAction(msg.chat.id, 'typing');
 
   var location = false;
@@ -105,14 +116,14 @@ var onShowtimes = function (msg, cb, matches) {
       // If no movies found this way, it may be due to a time search like /movies tomorrow
       // try seting the date directly to the search
       retried = true;
-      var d = Date.parse(matches[1]);
+      var d = Date.parse(matches[2]);
       if (d !== null) {
         var api = new Showtimes(location || default_location, { date: dateDiff(d) });
         return api.getMoviesAsync().then(moviesHandler);
       }
     }
 
-    var response = formatMovies(msg, movies, matches[1]);
+    var response = formatMovies(msg, movies, matches[2]);
     if (!location) response.push(no_location_text);
     return Promise.mapSeries(response, function (text) {
       return bot.sendMessage(msg.chat.id, text, {
@@ -128,11 +139,11 @@ var onShowtimes = function (msg, cb, matches) {
     }
 
     var api = new Showtimes(location || default_location);
-    return api.getMoviesAsync(matches[1]);
+    return api.getMoviesAsync(matches[2]);
   }).then(moviesHandler).then(function () {
     cb();
   }).catch(function (err) {
-    onError(err, msg, error_showtimes_text, matches[1], 'showtimes', cb);
+    onError(err, msg, error_showtimes_text, matches[2], 'showtimes', cb);
   });
 };
 
@@ -164,11 +175,11 @@ var onMovie = function (msg, cb, matches) {
   });
 };
 
-var setLocation = function (id, location, cb) {
+var setLocation = function (msg, location, cb) {
   db.updateItem({
     Key: {
       userid: {
-        N: id + ''
+        N: msg.chat.id + ''
       }
     },
     TableName: 'showtimesbot-users',
@@ -183,7 +194,9 @@ var setLocation = function (id, location, cb) {
     }
   }, function (err) {
     if (err) console.log(err);
-    bot.sendMessage(id, err ? error_setting_location_text : util.format(location_set_text, location)).then(function () {
+    var response = err ? error_setting_location_text : util.format(location_set_text, location);
+    if (msg.chat.type !== 'private') response += location_set_group_append_text;
+    bot.sendMessage(msg.chat.id, response).then(function () {
       cb();
     }).catch(cb);
   });
@@ -285,26 +298,30 @@ var dateDiff = function (date) {
 };
 
 exports.handler = lambdaConfig.handler(telegramHandler({
-  onMessage: onMessage,
+  onMessage: onHelp,
   onText: [
     {
-      matches: /^\/setlocation\s+(.+)\s*$/,
+      matches: /^\/setlocation(@ShowtimesBot)?\s+(.+)\s*$/i,
       handler: onSetLocation
     },
     {
-      matches: /^\/setlocation\s*$/,
+      matches: /^\/setlocation(@ShowtimesBot)?\s*$/i,
       handler: onSetDeferedLocation
     },
     {
-      matches: /^\/theaters(?:\s+(.+)\s*)?$/,
+      matches: /^\/theaters(@ShowtimesBot)?(?:\s+(.+)\s*)?$/i,
       handler: onTheaters
     },
     {
-      matches: /^\/(?:showtimes|movies)(?:\s+(.+)\s*)?$/,
+      matches: /^\/(?:showtimes|movies)(@ShowtimesBot)?(?:\s+(.+)\s*)?$/i,
       handler: onShowtimes
     },
     {
-      matches: /^\/movie_(\d+)_(.+)$/,
+      matches: /^\/help(@ShowtimesBot)?/i,
+      handler: onHelp
+    },
+    {
+      matches: /^\/movie_(\d+)_(.+)$/i,
       handler: onMovie
     }
   ],
