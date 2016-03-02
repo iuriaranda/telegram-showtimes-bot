@@ -12,6 +12,7 @@ var _ = require('underscore');
 var Promise = require('bluebird');
 var Showtimes = require('showtimes');
 var AWS = require('aws-sdk');
+require('datejs');
 Promise.promisifyAll(Showtimes.prototype);
 
 var api = new Showtimes('Barcelona, Spain');
@@ -132,10 +133,10 @@ var onMovie = function (msg, cb, matches) {
       no_location = true;
     }
 
-    var api = new Showtimes(location);
-    return api.getMovieAsync(matches[1]);
+    var api = new Showtimes(location, { date: matches[1] });
+    return api.getMovieAsync(matches[2]);
   }).then(function (movie) {
-    var response = formatMovies(msg, movie, matches[1]);
+    var response = formatMovies(msg, movie, matches[2]);
     if (no_location) response.push(no_location_text);
     return Promise.mapSeries(response, function (text) {
       return bot.sendMessage(msg.chat.id, text, {
@@ -146,7 +147,7 @@ var onMovie = function (msg, cb, matches) {
   }).then(function () {
     cb();
   }).catch(function (err) {
-    onError(err, msg, error_showtimes_text, matches[1], 'showtimes', cb);
+    onError(err, msg, error_showtimes_text, matches[2], 'showtimes', cb);
   });
 };
 
@@ -230,7 +231,7 @@ var formatThings = function (msg, things, type, query) {
     }
 
     if (type === 'movies' && thing.more_theaters) {
-      partialResponse += util.format('_Show more theaters_ -> /movie\\_%s\n', thing.id);
+      partialResponse += util.format('_Show more theaters_ -> /movie\\_%d\\_%s\n', dateDiff(things.date), thing.id);
     }
 
     if (!noOtherThings) {
@@ -266,6 +267,10 @@ var formatTheaters = function (msg, theaters, query) {
   return formatThings(msg, theaters, 'theaters', query);
 };
 
+var dateDiff = function (date) {
+  return Math.floor(Date.today().getElapsed(Date.parse(date))/1000/60/60/24);
+};
+
 exports.handler = lambdaConfig.handler(telegramHandler({
   onMessage: onMessage,
   onText: [
@@ -286,7 +291,7 @@ exports.handler = lambdaConfig.handler(telegramHandler({
       handler: onShowtimes
     },
     {
-      matches: /^\/movie_(.+)$/,
+      matches: /^\/movie_(\d+)_(.+)$/,
       handler: onMovie
     }
   ],

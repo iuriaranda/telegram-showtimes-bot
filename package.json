@@ -20,6 +20,7 @@
   "dependencies": {
     "aws-sdk": "^2.2.35",
     "bluebird": "^3.1.5",
+    "datejs": "0.0.2",
     "lambda-remote-config": "iuriaranda/lambda-remote-config",
     "lambda-telegram-bot-handler": "iuriaranda/lambda-telegram-bot-handler",
     "node-telegram-bot-api": "^0.19.2",
@@ -32,7 +33,8 @@
     "node-telegram-bot-api",
     "showtimes",
     "bluebird",
-    "underscore"
+    "underscore",
+    "datejs"
   ],
   "devDependencies": {
     "grunt": "^0.4.5",
