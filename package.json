@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "A telegram bot that shows information about movie showtimes",
   "main": "index.js",
+  "private": true,
   "scripts": {
     "start": "startbot --handler index.handler --bot_token $TELEGRAM_BOT_TOKEN"
   },
