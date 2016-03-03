@@ -21,6 +21,7 @@
   "dependencies": {
     "aws-sdk": "2.2.40",
     "bluebird": "3.3.3",
+    "botanio": "0.0.6",
     "datejs": "0.0.2",
     "lambda-remote-config": "0.1.0",
     "lambda-telegram-bot-handler": "0.2.0",
@@ -35,7 +36,8 @@
     "showtimes",
     "bluebird",
     "underscore",
-    "datejs"
+    "datejs",
+    "botanio"
   ],
   "devDependencies": {
     "grunt": "^0.4.5",

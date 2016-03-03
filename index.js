@@ -18,9 +18,10 @@ Promise.promisifyAll(Showtimes.prototype);
 var CONFIG = lambdaConfig.fetch({ S3Bucket: 'showtimes-bot-config', S3File: 'config.json' });
 var db = new AWS.DynamoDB({ region: 'eu-west-1' });
 
-var bot;
+var bot, botan;
 lambdaConfig.on('ready', function () {
   bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN || CONFIG.telegram_bot_key, { polling: false, webhook: false });
+  botan = require('botanio')(CONFIG.botanio_token);
 });
 
 var help_text = 'I can show you nearby theaters and showtimes. Tell me, what can I do for you?\n\n';
@@ -45,6 +46,7 @@ var default_location = 'Barcelona, Spain';
 
 // Process unhandled messages
 var onHelp = function (msg, cb, matches) {
+  botan.track(msg, '/help');
   if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
 
   bot.sendMessage(msg.chat.id, help_text + ((msg.chat.type !== 'private') ? help_group_append_text : ''), {
@@ -56,11 +58,13 @@ var onHelp = function (msg, cb, matches) {
 };
 
 var onSetLocation = function (msg, cb, matches) {
+  botan.track(msg, '/setlocation location');
   if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
   setLocation(msg, matches[2], cb);
 };
 
 var onSetDeferedLocation = function (msg, cb, matches) {
+  botan.track(msg, '/setlocation');
   if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
   var response = deferred_location_help_text;
   if (msg.chat.type !== 'private') {
@@ -72,11 +76,13 @@ var onSetDeferedLocation = function (msg, cb, matches) {
 };
 
 var onLocation = function (msg, cb) {
+  botan.track(msg, 'location');
   if (msg.chat.type !== 'private') return cb(); // Ignore all but private messages, TODO: be able to set location in a group
   setLocation(msg, util.format('%s,%s', msg.location.latitude, msg.location.longitude), cb);
 };
 
 var onTheaters = function (msg, cb, matches) {
+  botan.track(msg, '/theaters');
   if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
   bot.sendChatAction(msg.chat.id, 'typing');
 
@@ -106,6 +112,7 @@ var onTheaters = function (msg, cb, matches) {
 };
 
 var onShowtimes = function (msg, cb, matches) {
+  botan.track(msg, '/showtimes');
   if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
   bot.sendChatAction(msg.chat.id, 'typing');
 
@@ -148,6 +155,7 @@ var onShowtimes = function (msg, cb, matches) {
 };
 
 var onMovie = function (msg, cb, matches) {
+  botan.track(msg, '/movie_id');
   bot.sendChatAction(msg.chat.id, 'typing');
 
   var no_location = false;
