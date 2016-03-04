@@ -46,7 +46,7 @@ var default_location = 'Barcelona, Spain';
 
 // Process unhandled messages
 var onHelp = function (msg, cb, matches) {
-  botan.track(msg, '/help');
+  track(msg, '/help');
   if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
 
   bot.sendMessage(msg.chat.id, help_text + ((msg.chat.type !== 'private') ? help_group_append_text : ''), {
@@ -58,13 +58,13 @@ var onHelp = function (msg, cb, matches) {
 };
 
 var onSetLocation = function (msg, cb, matches) {
-  botan.track(msg, '/setlocation location');
+  track(msg, '/setlocation location');
   if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
   setLocation(msg, matches[2], cb);
 };
 
 var onSetDeferedLocation = function (msg, cb, matches) {
-  botan.track(msg, '/setlocation');
+  track(msg, '/setlocation');
   if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
   var response = deferred_location_help_text;
   if (msg.chat.type !== 'private') {
@@ -76,13 +76,13 @@ var onSetDeferedLocation = function (msg, cb, matches) {
 };
 
 var onLocation = function (msg, cb) {
-  botan.track(msg, 'location');
+  track(msg, 'location');
   if (msg.chat.type !== 'private') return cb(); // Ignore all but private messages, TODO: be able to set location in a group
   setLocation(msg, util.format('%s,%s', msg.location.latitude, msg.location.longitude), cb);
 };
 
 var onTheaters = function (msg, cb, matches) {
-  botan.track(msg, '/theaters');
+  track(msg, '/theaters');
   if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
   bot.sendChatAction(msg.chat.id, 'typing');
 
@@ -112,7 +112,7 @@ var onTheaters = function (msg, cb, matches) {
 };
 
 var onShowtimes = function (msg, cb, matches) {
-  botan.track(msg, '/showtimes');
+  track(msg, '/showtimes');
   if (msg.chat.type !== 'private' && (!matches || !matches[1])) return cb(); // Ignore group messages not directed to me
   bot.sendChatAction(msg.chat.id, 'typing');
 
@@ -155,7 +155,7 @@ var onShowtimes = function (msg, cb, matches) {
 };
 
 var onMovie = function (msg, cb, matches) {
-  botan.track(msg, '/movie_id');
+  track(msg, '/movie_id');
   bot.sendChatAction(msg.chat.id, 'typing');
 
   var no_location = false;
@@ -303,6 +303,59 @@ var formatTheaters = function (msg, theaters, query) {
 
 var dateDiff = function (date) {
   return Math.floor(Date.today().getElapsed(Date.parse(date))/1000/60/60/24);
+};
+
+var track = function (msg, command) {
+  botan.track(msg, command);
+
+  // user_id, first_name, private, group_ids, last_message
+  var updateExpression = 'SET #lastm=:lastm';
+  var expressionAttributeValues = {
+    ':lastm': {
+      N: new Date().getTime() + ''
+    }
+  };
+
+  if (msg.from.first_name) {
+    updateExpression += ',#fname=:fname';
+    expressionAttributeValues[':fname'] = {
+      S: msg.from.first_name
+    };
+  }
+
+  if (msg.chat.type === 'private') {
+    updateExpression += ',#private=:priv';
+    expressionAttributeValues[':priv'] = {
+      BOOL: true
+    };
+  } else if (msg.chat.type === 'group') {
+    updateExpression += ' ADD groupids :g';
+    expressionAttributeValues[':g'] = {
+      L: [
+        {
+          N: msg.chat.id + ''
+        }
+      ]
+    };
+  }
+
+  db.updateItem({
+    Key: {
+      userid: {
+        N: msg.from.id + ''
+      }
+    },
+    TableName: 'showtimesbot-users',
+    UpdateExpression: updateExpression,
+    ExpressionAttributeValues: expressionAttributeValues,
+    ExpressionAttributeNames: {
+      '#lastm': 'last_message_at',
+      '#fname': 'first_name',
+      '#private': 'private'
+    }
+  }, function (err) {
+    if (err) console.log(err);
+  });
 };
 
 exports.handler = lambdaConfig.handler(telegramHandler({
