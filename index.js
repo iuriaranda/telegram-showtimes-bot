@@ -309,51 +309,64 @@ var track = function (msg, command) {
   botan.track(msg, command);
 
   // user_id, first_name, private, group_ids, last_message
-  var updateExpression = 'SET #lastm=:lastm';
+  var updateExpressionSet = ['#lastm=:lastm'];
+  var updateExpressionAdd = [];
   var expressionAttributeValues = {
     ':lastm': {
       N: new Date().getTime() + ''
     }
   };
+  var expressionAttributeNames = {
+    '#lastm': 'last_message_at'
+  };
 
   if (msg.from.first_name) {
-    updateExpression += ',#fname=:fname';
+    updateExpressionSet.push('#fname=:fname');
     expressionAttributeValues[':fname'] = {
       S: msg.from.first_name
     };
+    expressionAttributeNames['#fname'] = 'first_name';
   }
 
   if (msg.chat.type === 'private') {
-    updateExpression += ',#private=:priv';
+    updateExpressionSet.push('#private=:priv');
     expressionAttributeValues[':priv'] = {
       BOOL: true
     };
+    expressionAttributeNames['#private'] = 'private';
   } else if (msg.chat.type === 'group') {
+    updateExpressionAdd.push('groupids :g');
     updateExpression += ' ADD groupids :g';
     expressionAttributeValues[':g'] = {
-      L: [
-        {
-          N: msg.chat.id + ''
-        }
+      NS: [
+        msg.chat.id + ''
       ]
     };
   }
 
-  db.updateItem({
+  var opts = {
     Key: {
       userid: {
         N: msg.from.id + ''
       }
     },
     TableName: 'showtimesbot-users',
-    UpdateExpression: updateExpression,
     ExpressionAttributeValues: expressionAttributeValues,
-    ExpressionAttributeNames: {
-      '#lastm': 'last_message_at',
-      '#fname': 'first_name',
-      '#private': 'private'
-    }
-  }, function (err) {
+    ExpressionAttributeNames: expressionAttributeNames
+  };
+
+  var updateExpression = [];
+  if (updateExpressionSet.length) {
+    updateExpression.push('SET ' + updateExpressionSet.join(','));
+  }
+  if (updateExpressionAdd.length) {
+    updateExpression.push('ADD ' + updateExpressionAdd.join(','));
+  }
+  if (updateExpression.length) {
+    opts.UpdateExpression = updateExpression.join(' ');
+  }
+
+  db.updateItem(opts, function (err) {
     if (err) console.log(err);
   });
 };
