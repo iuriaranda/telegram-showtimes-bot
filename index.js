@@ -186,11 +186,11 @@ var onMovie = function (msg, cb, matches) {
 var setLocation = function (msg, location, cb) {
   db.updateItem({
     Key: {
-      userid: {
+      chatid: {
         N: msg.chat.id + ''
       }
     },
-    TableName: 'showtimesbot-users',
+    TableName: 'showtimesbot-locations',
     UpdateExpression: 'SET #loc=:loc',
     ExpressionAttributeValues: {
       ':loc': {
@@ -214,11 +214,11 @@ var getLocationForUser = function (user_id) {
   return new Promise(function (fulfill, reject) {
     db.getItem({
       Key: {
-        userid: {
+        chatid: {
           N: user_id + ''
         }
       },
-      TableName: 'showtimesbot-users'
+      TableName: 'showtimesbot-locations'
     }, function (err, data) {
       if (err) reject(err);
       else if (data.Item && data.Item.location && data.Item.location.S) fulfill(data.Item.location.S);
